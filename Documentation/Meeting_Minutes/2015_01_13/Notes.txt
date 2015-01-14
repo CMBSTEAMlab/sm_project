@@ -1,0 +1,23 @@
+Began exploring capacitive sensors.
+
+Used the CapSense library from arduino:
+http://playground.arduino.cc/Main/CapacitiveSensor?from=Main.CapSense
+
+Watched NerdKits light up pumpkin example:
+http://www.nerdkits.com/videos/halloween_capacitive_touch_sensor/
+
+Watched How Capacitive Liquid Level Sensors Work:
+https://www.youtube.com/watch?v=0du-QU1Q0T4
+
+Made a capacitive touch sensor to toggle on and off an LED.
+Inspired by: 
+http://www.instructables.com/id/How-To-Use-Touch-Sensors-With-Arduino/
+Had the students start with the CapSense example and modify to toggle
+LED on their own. The students were able to identify that the capacitor
+was made up of one piece of foil, your hand and the dielectric is air.
+
+The next step was to make a soil moisture sensor by adding a second piece
+of foil and taping both pieces to the sides of tupperware (see pictures). 
+The students were able to identify that the soil is now the dielectric and 
+that adding water changes the capacitance. After setting it up, we watched 
+the sensor readings change in the serial monitor.
