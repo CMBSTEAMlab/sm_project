@@ -11,10 +11,10 @@
  */
 
 
-CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
+CapacitiveSensor   cs_4_6 = CapacitiveSensor(4,6);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
 
 #define COMMAND_TIMEOUT 2000 // ms
-////////////////////////
+////////////////////////*
 // WiFi Network Stuff //
 ////////////////////////
 // Your WiFi network's SSID (name):
@@ -70,7 +70,7 @@ long capacVal;
 /////////////////////////
 // Phant limits you to 10 seconds between posts. Use this variable
 // to limit the update rate (in milliseconds):
-const unsigned long UPDATE_RATE = 3000; // 300000ms = 5 minutes
+const unsigned long UPDATE_RATE = 3600000; // 300000ms = 5 minutes
 unsigned long lastUpdate = 0; // Keep track of last update time
 
 ///////////
@@ -84,7 +84,7 @@ void setup()
   pinMode(homePin, INPUT);
   pinMode(industPin, INPUT);
 
-  cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
+  cs_4_6.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
 
   // Set up serial ports:
   Serial.begin(9600);
@@ -145,7 +145,13 @@ void loop()
   //Serial.print(millis() - start);        // check on performance in milliseconds
   //Serial.print("\t");                    // tab character for debug windown spacing
 
-
+  Serial.print("Capa");
+  Serial.print("\t ");
+  Serial.print("Home");
+  Serial.print("\t ");
+  Serial.print("Indu");
+  Serial.print("\t ");
+  Serial.print("\n ");
   //Serial.print(millis()); // Timestamp
   Serial.print("");
   Serial.print(capacVal);                  // print sensor output 1
@@ -154,7 +160,7 @@ void loop()
   Serial.print('\t');
   Serial.print(industVal);
   Serial.print('\n');
-  delay(1000);
+  delay(3600000);
 }
 
 ////////////////
@@ -174,7 +180,7 @@ int sendData()
   //readSensors(); // Get updated values from sensors.
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
-  capacVal =  cs_4_2.capacitiveSensor(30);
+  capacVal =  cs_4_6.capacitiveSensor(30);
   phant.add(industrial, industVal);
   phant.add(homebrew, homeVal);
   phant.add(capacitive, capacVal);
@@ -212,7 +218,7 @@ void readSensors()
 {
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
-  capacVal =  cs_4_2.capacitiveSensor(30);
+  capacVal =  cs_4_6.capacitiveSensor(30);
 }
 
 ///////////////////////////
