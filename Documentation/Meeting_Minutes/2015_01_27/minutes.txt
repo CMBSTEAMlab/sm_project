@@ -1,0 +1,3 @@
+*Modified existing soil sensor code.
+*Worked extensively on constructing a new prototype.
+*Uploaded data to the cloud.
