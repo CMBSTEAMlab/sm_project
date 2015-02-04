@@ -73,7 +73,7 @@ long capacVal;
 /////////////////////////
 // Phant limits you to 10 seconds between posts. Use this variable
 // to limit the update rate (in milliseconds):
-const unsigned long UPDATE_RATE = 21600000; // 300000ms = 5 minutes
+const unsigned long UPDATE_RATE = 21600000; // 21,600,000ms = 6 Hours
 unsigned long lastUpdate = 0; // Keep track of last update time
 
 ///////////
@@ -86,6 +86,7 @@ void setup()
   // Set up sensor pins:
   pinMode(homePin, INPUT);
   pinMode(industPin, INPUT);
+  pinMode(XBEE_SLEEP_PIN, OUTPUT);
 
   cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
 
@@ -127,6 +128,8 @@ void setup()
 // over the serial port.
 void loop()
 {
+  //Turn the XBEE ON (Wakes it the hell up)
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
   // If current time is UPDATE_RATE milliseconds greater than
   // the last update rate, send new data.
   if (millis() > (lastUpdate + UPDATE_RATE))
@@ -138,18 +141,9 @@ void loop()
       Serial.println("Failed :(");
     lastUpdate = millis();
   }
-  // In the meanwhile, we'll print data to the serial monitor,
-  // just to let the world know our Arduino is still operational:
-  //readSensors(); // Get updated values from sensors
-  long start = millis();
   
+  long start = millis()
 
-
-  //Serial.print(millis() - start);        // check on performance in milliseconds
-  //Serial.print("\t");                    // tab character for debug windown spacing
-
-
-  //Serial.print(millis()); // Timestamp
   Serial.print("");
   Serial.print(capacVal);                  // print sensor output 1
   Serial.print("\t ");
@@ -157,7 +151,11 @@ void loop()
   Serial.print('\t');
   Serial.print(industVal);
   Serial.print('\n');
-  Narcoleptic.delay(UPDATE_RATE);2160000021600000
+  //Puts the XBEE in sleep mode
+  digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  //puts the Aruino to sleep
+  Narcoleptic.delay(UPDATE_RATE);
+}
 
 ////////////////
 // sendData() //
