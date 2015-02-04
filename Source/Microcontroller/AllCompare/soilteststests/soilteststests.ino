@@ -1,3 +1,5 @@
+#include <Narcoleptic.h>
+
 #include <Phant.h>
 #include <SoftwareSerial.h>
 #include <CapacitiveSensor.h>
@@ -13,6 +15,7 @@
 
 CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
 
+#define XBEE_SLEEP_PIN 7
 #define COMMAND_TIMEOUT 2000 // ms
 ////////////////////////
 // WiFi Network Stuff //
@@ -70,7 +73,7 @@ long capacVal;
 /////////////////////////
 // Phant limits you to 10 seconds between posts. Use this variable
 // to limit the update rate (in milliseconds):
-const unsigned long UPDATE_RATE = 3000; // 300000ms = 5 minutes
+const unsigned long UPDATE_RATE = 21600000; // 300000ms = 5 minutes
 unsigned long lastUpdate = 0; // Keep track of last update time
 
 ///////////
@@ -154,8 +157,7 @@ void loop()
   Serial.print('\t');
   Serial.print(industVal);
   Serial.print('\n');
-  delay(1000);
-}
+  Narcoleptic.delay(UPDATE_RATE);2160000021600000
 
 ////////////////
 // sendData() //
