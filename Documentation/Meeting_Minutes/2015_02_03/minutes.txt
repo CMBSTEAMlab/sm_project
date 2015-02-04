@@ -1,0 +1,9 @@
+*Started by creating a list of directions everyone would follow in the 
+  alloted period of time.
+*NIC & HENRY worked on power consumption mitigation, utilizing narcoleptic
+  libraries and putting Xbee to sleep.
+*OWEN worked on designing a circuit-board for the sensor, by using the
+  Fritzing PCB creator.
+*REN worked on aquiring Eagle CAD PCB design software.
+*HARRY & LUC looked into competitor soil moisture sensors and wrote minutes
+  of this meeting and the last.
