@@ -5,5 +5,4 @@
 *OWEN worked on designing a circuit-board for the sensor, by using the
   Fritzing PCB creator.
 *REN worked on aquiring Eagle CAD PCB design software.
-*HARRY & LUC looked into competitor soil moisture sensors and wrote minutes
-  of this meeting and the last.
+*HARRY & LUC looked into competitor soil moisture sensors and wrote minutes of this meeting and the last.
