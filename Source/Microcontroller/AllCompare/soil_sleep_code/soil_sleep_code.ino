@@ -87,7 +87,7 @@ void setup()
   pinMode(homePin, INPUT);
   pinMode(industPin, INPUT);
   pinMode(XBEE_SLEEP_PIN, OUTPUT);
-  setupPins();
+  
 
   cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
 
@@ -96,7 +96,8 @@ void setup()
   // Make sure the XBEE BAUD RATE matches its pre-set value
   // (defaults to 9600).
   xB.begin(XBEE_BAUD);
-
+  
+  
   // Set up WiFi network
   Serial.println("Testing network");
   // connectWiFi will atindustt to connect to the given SSID, using
@@ -109,7 +110,10 @@ void setup()
   // setupHTTP() will set up the destination address, port, and
   // make sure we're in TCP mode:
   setupHTTP(destIP);
-
+  delay(2000);
+  
+  setupPins();
+  digitalWrite(XBEE_SLEEP_PIN, HIGH);
   // Once everything's set up, send a data stream to make sure
   // everything check's out:
   Serial.print("Sending update...");
@@ -127,14 +131,24 @@ void setup()
 // to be posted.
 // Otherwise, to kill time, it'll print out the sensor values
 // over the serial port.
+/*void loop()
+{
+  Serial.println("sleep xbee");
+  digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  delay(5000);
+  Serial.println("wake up xbee");
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
+  delay(5000);  
+}*/
 void loop()
 {
   //Turn the XBEE ON (Wakes it up)
   digitalWrite(XBEE_SLEEP_PIN, LOW);
-
+  delay(10000);
+  
   Serial.print("Sending update...");
   if (sendData())
-    0Serial.println("SUCCESS!");
+    Serial.println("SUCCESS!");
   else
     Serial.println("Failed :(");
 
@@ -145,11 +159,11 @@ void loop()
   Serial.print('\t');
   Serial.print(industVal);
   Serial.print('\n');
-  delay(2000);
+  delay(1000);
   //Puts the XBEE in sleep mode
   digitalWrite(XBEE_SLEEP_PIN, HIGH);
   //puts the Aruino to sleep
-  Narcoleptic.delay(10000);
+  Narcoleptic.delay(1000);
 }
 
 ////////////////
@@ -240,8 +254,8 @@ void setupPins()
   // Enter command mode, wait till we get there.
   while (!commandMode(1))
     ;
-  command("ATD7 0");
-  command("ATSM 1");
+  command("ATD70", 2);
+  command("ATSM1", 2);
 
   commandMode(0); // Exit command mode when done
 }
