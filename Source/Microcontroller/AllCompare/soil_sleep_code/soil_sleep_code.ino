@@ -13,7 +13,7 @@
  */
 
 
-CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
+CapacitiveSensor   cs_4_5 = CapacitiveSensor(4,5);        // 10M resistor between pins 4 & 5, pin 5 is sensor pin, add a wire and or foil if desired
 
 #define XBEE_SLEEP_PIN 7
 #define COMMAND_TIMEOUT 2000 // ms
@@ -73,7 +73,8 @@ long capacVal;
 /////////////////////////
 // Phant limits you to 10 seconds between posts. Use this variable
 // to limit the update rate (in milliseconds):
-const unsigned long UPDATE_RATE = 10000; // 21,600,000ms = 6 Hours
+const unsigned long UPDATE_RATE = 10000; // 21,600,000ms = 6 H000ms = 6 Hours
+
 unsigned long lastUpdate = 0; // Keep track of last update time
 
 ///////////
@@ -89,7 +90,7 @@ void setup()
   pinMode(XBEE_SLEEP_PIN, OUTPUT);
   
 
-  cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
+  cs_4_5.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
 
   // Set up serial ports:
   Serial.begin(9600);
@@ -143,9 +144,14 @@ void setup()
 void loop()
 {
   //Turn the XBEE ON (Wakes it up)
+  delay(1000);
   digitalWrite(XBEE_SLEEP_PIN, LOW);
-  delay(10000);
   
+  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  Serial.println("Connected!");
+  Serial.print("IP Address: "); printIP(); Serial.println(); 
+  setupHTTP(destIP);
+  delay(7000);
   Serial.print("Sending update...");
   if (sendData())
     Serial.println("SUCCESS!");
@@ -162,8 +168,9 @@ void loop()
   delay(1000);
   //Puts the XBEE in sleep mode
   digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  delay(1000);
   //puts the Aruino to sleep
-  Narcoleptic.delay(1000);
+  Narcoleptic.delay(5000);
 }
 
 ////////////////
@@ -183,7 +190,7 @@ int sendData()
   //readSensors(); // Get updated values from sensors.
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
-  capacVal =  cs_4_2.capacitiveSensor(30);
+  capacVal =  cs_4_5.capacitiveSensor(30);
   phant.add(industrial, industVal);
   phant.add(homebrew, homeVal);
   phant.add(capacitive, capacVal);
@@ -221,7 +228,7 @@ void readSensors()
 {
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
-  capacVal =  cs_4_2.capacitiveSensor(30);
+  capacVal =  cs_4_5.capacitiveSensor(30);
 }
 
 ///////////////////////////
@@ -252,8 +259,8 @@ void setupHTTP(String address)
 void setupPins()
 {
   // Enter command mode, wait till we get there.
-  while (!commandMode(1))
-    ;
+  commandMode(1);
+  
   command("ATD70", 2);
   command("ATSM1", 2);
 
