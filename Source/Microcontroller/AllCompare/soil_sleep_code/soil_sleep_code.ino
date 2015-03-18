@@ -1,3 +1,5 @@
+//The sleeping with narcoleptic and XBEE do not work very well. Narcoleptic appeared to do nothing.
+
 #include <Narcoleptic.h>
 
 #include <Phant.h>
@@ -73,7 +75,7 @@ long capacVal;
 /////////////////////////
 // Phant limits you to 10 seconds between posts. Use this variable
 // to limit the update rate (in milliseconds):
-const unsigned long UPDATE_RATE = 10000; // 21,600,000ms = 6 H000ms = 6 Hours
+const unsigned long UPDATE_RATE = 10000; // 21,600,000ms = 6 Hours
 
 unsigned long lastUpdate = 0; // Keep track of last update time
 
@@ -113,8 +115,9 @@ void setup()
   setupHTTP(destIP);
   delay(2000);
   
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
   setupPins();
-  digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
   // Once everything's set up, send a data stream to make sure
   // everything check's out:
   Serial.print("Sending update...");
@@ -144,14 +147,14 @@ void setup()
 void loop()
 {
   //Turn the XBEE ON (Wakes it up)
-  delay(1000);
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
-  
+  //delay(1000);
+  /*digitalWrite(XBEE_SLEEP_PIN, LOW);
+  delay(5000);
   connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  delay(5000);
   Serial.println("Connected!");
   Serial.print("IP Address: "); printIP(); Serial.println(); 
-  setupHTTP(destIP);
-  delay(7000);
+  setupHTTP(destIP);*/
   Serial.print("Sending update...");
   if (sendData())
     Serial.println("SUCCESS!");
@@ -165,12 +168,12 @@ void loop()
   Serial.print('\t');
   Serial.print(industVal);
   Serial.print('\n');
-  delay(1000);
+  //delay(5000);
   //Puts the XBEE in sleep mode
-  digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  delay(1000);
+  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
   //puts the Aruino to sleep
-  Narcoleptic.delay(5000);
+  delay(600000);
+  
 }
 
 ////////////////
