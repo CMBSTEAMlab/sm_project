@@ -161,6 +161,7 @@ void loop()
   else
     Serial.println("Failed :(");
 
+
   Serial.print("");
   Serial.print(capacVal);                  // print sensor output 1
   Serial.print("\t ");
