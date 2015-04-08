@@ -173,7 +173,7 @@ void loop()
   //Puts the XBEE in sleep mode
   //digitalWrite(XBEE_SLEEP_PIN, HIGH);
   //puts the Aruino to sleep
-  delay(600000);
+  delay(3000); //add "Narcoleptic." before this for narco
   
 }
 
@@ -194,7 +194,7 @@ int sendData()
   //readSensors(); // Get updated values from sensors.
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
-  capacVal =  cs_4_5.capacitiveSensor(30);
+  capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
   phant.add(industrial, industVal);
   phant.add(homebrew, homeVal);
   phant.add(capacitive, capacVal);
