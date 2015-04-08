@@ -147,14 +147,14 @@ void setup()
 void loop()
 {
   //Turn the XBEE ON (Wakes it up)
-  //delay(1000);
-  /*digitalWrite(XBEE_SLEEP_PIN, LOW);
-  delay(5000);
+  delay(3000);
+  //digitalWrite(XBEE_SLEEP_PIN, LOW);
+  //delay(5000);
   connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
-  delay(5000);
+  //delay(5000);
   Serial.println("Connected!");
   Serial.print("IP Address: "); printIP(); Serial.println(); 
-  setupHTTP(destIP);*/
+  setupHTTP(destIP);
   Serial.print("Sending update...");
   if (sendData())
     Serial.println("SUCCESS!");
@@ -173,7 +173,7 @@ void loop()
   //Puts the XBEE in sleep mode
   //digitalWrite(XBEE_SLEEP_PIN, HIGH);
   //puts the Aruino to sleep
-  delay(3000); //add "Narcoleptic." before this for narco
+  Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
   
 }
 
