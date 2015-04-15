@@ -1,7 +1,6 @@
-Henry, Ren, and Harry: Henry worked on perfecting the soil sensor setup. The data values
-didn't present any change in moisture value. One possible reason could be an 
-error in the circuits setup itself. Another plausible reason might be the 
-flooding of the soil. Ren and Harry attempted to augment the circuitry of the 
+Henry, Ren, and Harry: Henry worked on perfecting the soil sensor setup. The data values didn't present any change in moisture value. One possible reason could be an 
+error in the circuits setup itself. Another plausible reason might be the flooding of the soil. 
+Ren and Harry attempted to augment the circuitry of the 
 soil sensor.
 
 EDIT: The issue was due to cicuitry being incorrect
