@@ -1,0 +1,14 @@
+Henry, Ren, and Harry: Henry worked on perfecting the soil sensor setup. The data values didn't present any change in moisture value. One possible reason could be an 
+error in the circuits setup itself. Another plausible reason might be the flooding of the soil. 
+Ren and Harry attempted to augment the circuitry of the 
+soil sensor.
+
+EDIT: The issue was due to cicuitry being incorrect
+
+Luc, Yufu, and Gabe: We all worked on documenting any changes to code, or
+issues that arose. 
+
+Owen: Owen is resoldering a soil sensor because of the inseficiency of the
+previous solderer.
+
+
