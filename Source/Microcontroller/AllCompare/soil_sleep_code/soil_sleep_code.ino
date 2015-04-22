@@ -70,6 +70,8 @@ float industVal;
 int homeVal, coVal;
 long capacVal;
 
+int testVal = 1;
+
 /////////////////////////
 // Update Rate Control //
 /////////////////////////
@@ -86,6 +88,8 @@ unsigned long lastUpdate = 0; // Keep track of last update time
 // SERIAL ports, and CONNECT TO THE WIFI NETWORK.
 void setup()
 {
+  
+  
   // Set up sensor pins:
   pinMode(homePin, INPUT);
   pinMode(industPin, INPUT);
@@ -147,33 +151,42 @@ void setup()
 void loop()
 {
   //Turn the XBEE ON (Wakes it up)
-  //delay(3000);
-  //digitalWrite(XBEE_SLEEP_PIN, LOW);
+  delay(5000);
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
   //delay(5000);
-  //connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   //delay(5000);
-  //Serial.println("Connected!");
-  //Serial.print("IP Address: "); printIP(); Serial.println(); 
-  //setupHTTP(destIP);
+  Serial.println("Connected!");
+  Serial.print("IP Address: "); printIP(); Serial.println(); 
+  setupHTTP(destIP);
+  for(int i=0; i<2;i++){
+  delay(10000);
+    
   Serial.print("Sending update...");
   if (sendData())
     Serial.println("SUCCESS!");
   else
     Serial.println("Failed :(");
 
-
+  //separate
   Serial.print("");
   Serial.print(capacVal);                  // print sensor output 1
   Serial.print("\t ");
   Serial.print(homeVal);
   Serial.print('\t');
-  Serial.print(industVal);
+  Serial.print(testVal);
+  //Serial.print(industVal);
   Serial.print('\n');
   //delay(5000);
+  
+  }
+  Serial.flush(); // Flush data so we get fresh stuff in
   //Puts the XBEE in sleep mode
-  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  //puts the Aruino to sleep
-  delay(10000); //add "Narcoleptic." before this for narco
+  digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  //puts the Aruino to sleepy
+  Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
+  
+  
   
 }
 
@@ -186,7 +199,7 @@ void loop()
 // phant.post() to send that data up to the server.
 int sendData()
 {
-  xB.flush(); // Flush data so we get fresh stuff in
+
   // IMPORTANT PHANT STUFF!!!
   // First we need to add fields and values to send as parameters
   // Since we just need to read values from the analog pins, this
@@ -195,18 +208,22 @@ int sendData()
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
   capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
-  phant.add(industrial, industVal);
+  phant.add(industrial, testVal);
+  testVal++;
+  //phant.add(industrial, industVal);
   phant.add(homebrew, homeVal);
   phant.add(capacitive, capacVal);
   // After our PHANT.ADD's we need to PHANT.POST(). The post needs
   // to be sent out the XBee. A simple "print" of that post will
   // take care of it.
   //Serial.println(phant.post());
-  xB.print(phant.post());
-
-  // Check the response to make sure we receive a "200 OK". If 
-  // we were good little programmers we'd check the content of
-  // the OK response. If we were good little programmers...
+  
+  String request = phant.post();
+  Serial.println(request);
+  xB.print(request);
+  xB.flush(); // Flush data so we get fresh stuff in
+  
+  // Check the response to make sure we receive a "200 OK".
   char response[12];
   if (waitForAvailable(12) > 0)
   {
