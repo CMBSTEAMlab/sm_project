@@ -70,7 +70,7 @@ float industVal;
 int homeVal, coVal;
 long capacVal;
 
-int testVal = 1;
+int testVal = 0;
 
 /////////////////////////
 // Update Rate Control //
@@ -123,7 +123,7 @@ void setup()
   setupPins();
   //digitalWrite(XBEE_SLEEP_PIN, HIGH);
   // Once everything's set up, send a data stream to make sure
-  // everything check's out:
+  // everything checks out 
   Serial.print("Sending update...");
   if (sendData())
     Serial.println("SUCCESS!");
@@ -139,15 +139,7 @@ void setup()
 // to be posted.
 // Otherwise, to kill time, it'll print out the sensor values
 // over the serial port.
-/*void loop()
-{
-  Serial.println("sleep xbee");
-  digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  delay(5000);
-  Serial.println("wake up xbee");
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
-  delay(5000);  
-}*/
+
 void loop()
 {
   //Turn the XBEE ON (Wakes it up)
@@ -160,30 +152,30 @@ void loop()
   Serial.print("IP Address: "); printIP(); Serial.println(); 
   setupHTTP(destIP);
   for(int i=0; i<2;i++){
-  delay(10000);
+    delay(10000);
     
-  Serial.print("Sending update...");
-  if (sendData())
-    Serial.println("SUCCESS!");
-  else
-    Serial.println("Failed :(");
+    Serial.print("Sending update...");
+    if (sendData())
+      Serial.println("SUCCESS!");
+    else
+      Serial.println("Failed :(");
 
-  //separate
-  Serial.print("");
-  Serial.print(capacVal);                  // print sensor output 1
-  Serial.print("\t ");
-  Serial.print(homeVal);
-  Serial.print('\t');
-  Serial.print(testVal);
-  //Serial.print(industVal);
-  Serial.print('\n');
-  //delay(5000);
+    //separate
+    Serial.print("");
+    Serial.print(capacVal);                  // print sensor output 1
+    Serial.print("\t ");
+    Serial.print(homeVal);
+    Serial.print('\t');
+    Serial.print(testVal-1);
+    //Serial.print(industVal);
+    Serial.print('\n');
+    //delay(5000);
   
   }
   Serial.flush(); // Flush data so we get fresh stuff in
   //Puts the XBEE in sleep mode
   digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  //puts the Aruino to sleepy
+  //puts the Aruino to sleep
   Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
   
   
@@ -199,12 +191,12 @@ void loop()
 // phant.post() to send that data up to the server.
 int sendData()
 {
-
   // IMPORTANT PHANT STUFF!!!
   // First we need to add fields and values to send as parameters
   // Since we just need to read values from the analog pins, this
   // can be automized with a for loop:
   //readSensors(); // Get updated values from sensors.
+  xB.flush();
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
   capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
@@ -280,7 +272,8 @@ void setupHTTP(String address)
 void setupPins()
 {
   // Enter command mode, wait till we get there.
-  commandMode(1);
+  while(!commandMode(1))
+    ;
   
   command("ATD70", 2);
   command("ATSM1", 2);
