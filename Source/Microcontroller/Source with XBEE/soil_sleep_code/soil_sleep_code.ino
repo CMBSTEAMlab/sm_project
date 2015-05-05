@@ -115,7 +115,10 @@ void setup()
   Serial.print("IP Address: "); printIP(); Serial.println(); 
 
   // setupHTTP() will set up the destination address, port, and
-  // make sure we're in TCP mode:
+  // make sure we're in TCP mode:  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  //connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  //connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+
   setupHTTP(destIP);
   delay(2000);
   
@@ -152,7 +155,7 @@ void loop()
 {
   //Turn the XBEE ON (Wakes it up)
   delay(5000);
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
+  //digitalWrite(XBEE_SLEEP_PIN, LOW);
   //delay(5000);
   connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   //delay(5000);
@@ -161,14 +164,15 @@ void loop()
   setupHTTP(destIP);
    
   readSensors();
-  while(sendData() != 1){
+  int sendVal = 0;
+  sendVal = sendData();
+  while(sendVal != 1){
     Serial.print("Sending update...");
-    if (sendData() == 1)
+    if (sendVal== 1)
       Serial.println("SUCCESS!");
-    else if(sendData() == -1)
+    else if(sendVal == -1)
       Serial.println("Timeout");
     else
-      Serial.println("SUCCESS!");
       Serial.println("Failed :(");
   }
   //separate
@@ -184,7 +188,7 @@ void loop()
   
   Serial.flush(); // Flush data so we get fresh stuff in
   //Puts the XBEE in sleep mode
-  digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
   //puts the Aruino to sleepy
   Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
   
@@ -229,6 +233,7 @@ int sendData()
   //Serial.println(testVal);
 
   phant.add(industrial, testVal);
+  testVal++;
   //phant.add(industrial, industVal);
   phant.add(homebrew, homeVal);
   phant.add(capacitive, capacVal);
@@ -346,7 +351,7 @@ void printIP()
 // For all of your connecting-to-WiFi-networks needs, we present
 // the connectWiFi() function. Supply it an SSID, encryption
 // setting, and passphrase, and it'll try its darndest to connect
-// to your network.
+// to connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK); your network.
 int connectWiFi(String id, byte auth, String psk)
 {
   const String CMD_SSID = "ATID";
@@ -481,7 +486,7 @@ int commandMode(boolean enter)
     char c;
     xB.print("+++");   // Send CMD mode string
     waitForAvailable(3);
-    Serial.println(xB.available());
+    /*Serial.println(xB.available());
     if (xB.available() > 0)
     {
       c = xB.read();
@@ -492,7 +497,7 @@ int commandMode(boolean enter)
         c = xB.read();
         Serial.println(c);
         return 1; // IF we see "OK" return success
-    }
+    }*/
     return 0; // If no (or incorrect) receive, return fail
   }
   else
