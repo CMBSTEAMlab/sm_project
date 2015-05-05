@@ -148,48 +148,50 @@ void setup()
   digitalWrite(XBEE_SLEEP_PIN, LOW);
   delay(5000);  
 }*/
-//void loop()
-//{
-//  //Turn the XBEE ON (Wakes it up)
-//  delay(5000);
-//  digitalWrite(XBEE_SLEEP_PIN, LOW);
-//  //delay(5000);
-//  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
-//  //delay(5000);
-//  Serial.println("Connected!");
-//  Serial.print("IP Address: "); printIP(); Serial.println(); 
-//  setupHTTP(destIP);
-//  for(int i=0; i<2;i++){
-//    delay(10000);
-//    
-//    Serial.print("Sending update...");
-//    if (sendData())
-//      Serial.println("SUCCESS!");
-//    else
-//      Serial.println("Failed :(");
-//
-//    //separate
-//    Serial.print("");
-//    Serial.print(capacVal);                  // print sensor output 1
-//    Serial.print("\t ");
-//    Serial.print(homeVal);
-//    Serial.print('\t');
-//    Serial.print(testVal);
-//    //Serial.print(industVal);
-//    Serial.print('\n');
-//    //delay(5000);
-//  
-//  }
-//  Serial.flush(); // Flush data so we get fresh stuff in
-//  //Puts the XBEE in sleep mode
-//  digitalWrite(XBEE_SLEEP_PIN, HIGH);
-//  //puts the Aruino to sleepy
-//  Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
-//  
-//  
-//  
-//}
 void loop()
+{
+  //Turn the XBEE ON (Wakes it up)
+  delay(5000);
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
+  //delay(5000);
+  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  //delay(5000);
+  Serial.println("Connected!");
+  Serial.print("IP Address: "); printIP(); Serial.println(); 
+  setupHTTP(destIP);
+   
+  readSensors();
+  while(sendData() != 1){
+    Serial.print("Sending update...");
+    if (sendData() == 1)
+      Serial.println("SUCCESS!");
+    else if(sendData() == -1)
+      Serial.println("Timeout");
+    else
+      Serial.println("SUCCESS!");
+      Serial.println("Failed :(");
+  }
+  //separate
+  Serial.print("");
+  Serial.print(capacVal);                  // print sensor output 1
+  Serial.print("\t ");
+  Serial.print(homeVal);
+  Serial.print('\t');
+  Serial.print(testVal);
+  //Serial.print(industVal);
+  Serial.print('\n');
+  //delay(5000);
+  
+  Serial.flush(); // Flush data so we get fresh stuff in
+  //Puts the XBEE in sleep mode
+  digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  //puts the Aruino to sleepy
+  Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
+  
+  
+  
+}
+/*void loop()
 {
     while(sendData() == -1) {
         delay(1000);
@@ -201,7 +203,7 @@ void loop()
     digitalWrite(XBEE_SLEEP_PIN, LOW);
   
   
-}
+}*/
 
 ////////////////
 // sendData() //
@@ -218,13 +220,13 @@ int sendData()
   // Since we just need to read values from the analog pins, this
   // can be automized with a for loop:
   //readSensors(); // Get updated values from sensors.
-  industVal = analogRead(industPin);
-  homeVal = analogRead(homePin);
-  capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
+  //industVal = analogRead(industPin);
+  //homeVal = analogRead(homePin);
+  //capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
   
-  Serial.println("Sending data: ");
-  Serial.print("industrial: ");
-  Serial.println(testVal);
+  //Serial.println("Sending data: ");
+  //Serial.print("industrial: ");
+  //Serial.println(testVal);
 
   phant.add(industrial, testVal);
   //phant.add(industrial, industVal);
