@@ -88,9 +88,6 @@ void setup()
   pinMode(industPin, INPUT);
   pinMode(XBEE_SLEEP_PIN, OUTPUT);
 
-  atCommand("D7", 0);
-  atCommand("SM", 1);
-  digitalWrite(XBEE_SLEEP_PIN, HIGH); 
   cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
 
   // Set up serial ports:
@@ -131,8 +128,6 @@ void setup()
 // over the serial port.
 void loop()
 {
-  //Turn the XBEE ON (Wakes it up)
-  //digitalWrite(XBEE_SLEEP_PIN, LOW);
 
   Serial.print("Sending update...");
   if (sendData())
@@ -147,12 +142,8 @@ void loop()
   Serial.print('\t');
   Serial.print(industVal);
   Serial.print('\n');
-  delay(2000);
   //Puts the XBEE in sleep mode
-  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  delay(2000);
-  //puts the Aruino to sleep
-  Narcoleptic.delay(10000);
+  delay(10000);
 }
 
 ////////////////

@@ -18,7 +18,7 @@
 CapacitiveSensor   cs_4_5 = CapacitiveSensor(4,5);        // 10M resistor between pins 4 & 5, pin 5 is sensor pin, add a wire and or foil if desired
 
 #define XBEE_SLEEP_PIN 7
-#define COMMAND_TIMEOUT 2000 // ms
+#define COMMAND_TIMEOUT 10000 // ms
 ////////////////////////
 // WiFi Network Stuff //
 ////////////////////////
@@ -70,7 +70,7 @@ float industVal;
 int homeVal, coVal;
 long capacVal;
 
-int testVal = 0;
+int testVal = 1;
 
 /////////////////////////
 // Update Rate Control //
@@ -115,7 +115,10 @@ void setup()
   Serial.print("IP Address: "); printIP(); Serial.println(); 
 
   // setupHTTP() will set up the destination address, port, and
-  // make sure we're in TCP mode:
+  // make sure we're in TCP mode:  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  //connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+  //connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
+
   setupHTTP(destIP);
   delay(2000);
   
@@ -123,12 +126,12 @@ void setup()
   setupPins();
   //digitalWrite(XBEE_SLEEP_PIN, HIGH);
   // Once everything's set up, send a data stream to make sure
-  // everything checks out 
-  Serial.print("Sending update...");
-  if (sendData())
-    Serial.println("SUCCESS!");
-  else
-    Serial.println("Failed :(");
+  // everything check's out:
+ // Serial.print("Sending update...");
+ // if (sendData())
+ //   Serial.println("SUCCESS!");
+ // else
+ //   Serial.println("Failed :(");
 }
 
 //////////
@@ -139,48 +142,72 @@ void setup()
 // to be posted.
 // Otherwise, to kill time, it'll print out the sensor values
 // over the serial port.
-
+/*void loop()
+{
+  Serial.println("sleep xbee");
+  digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  delay(5000);
+  Serial.println("wake up xbee");
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
+  delay(5000);  
+}*/
 void loop()
 {
   //Turn the XBEE ON (Wakes it up)
   delay(5000);
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
+  //digitalWrite(XBEE_SLEEP_PIN, LOW);
   //delay(5000);
   connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   //delay(5000);
   Serial.println("Connected!");
   Serial.print("IP Address: "); printIP(); Serial.println(); 
   setupHTTP(destIP);
-  for(int i=0; i<2;i++){
-    delay(10000);
-    
+   
+  readSensors();
+  int sendVal = 0;
+  sendVal = sendData();
+  while(sendVal != 1){
     Serial.print("Sending update...");
-    if (sendData())
+    if (sendVal== 1)
       Serial.println("SUCCESS!");
+    else if(sendVal == -1)
+      Serial.println("Timeout");
     else
       Serial.println("Failed :(");
-
-    //separate
-    Serial.print("");
-    Serial.print(capacVal);                  // print sensor output 1
-    Serial.print("\t ");
-    Serial.print(homeVal);
-    Serial.print('\t');
-    Serial.print(testVal-1);
-    //Serial.print(industVal);
-    Serial.print('\n');
-    //delay(5000);
-  
   }
+  //separate
+  Serial.print("");
+  Serial.print(capacVal);                  // print sensor output 1
+  Serial.print("\t ");
+  Serial.print(homeVal);
+  Serial.print('\t');
+  Serial.print(testVal);
+  //Serial.print(industVal);
+  Serial.print('\n');
+  //delay(5000);
+  
   Serial.flush(); // Flush data so we get fresh stuff in
   //Puts the XBEE in sleep mode
-  digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  //puts the Aruino to sleep
+  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  //puts the Aruino to sleepy
   Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
   
   
   
 }
+/*void loop()
+{
+    while(sendData() == -1) {
+        delay(1000);
+    }
+     testVal++;
+    digitalWrite(XBEE_SLEEP_PIN, HIGH);
+    Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
+    //delay(10000);
+    digitalWrite(XBEE_SLEEP_PIN, LOW);
+  
+  
+}*/
 
 ////////////////
 // sendData() //
@@ -191,15 +218,20 @@ void loop()
 // phant.post() to send that data up to the server.
 int sendData()
 {
+
   // IMPORTANT PHANT STUFF!!!
   // First we need to add fields and values to send as parameters
   // Since we just need to read values from the analog pins, this
   // can be automized with a for loop:
   //readSensors(); // Get updated values from sensors.
-  xB.flush();
-  industVal = analogRead(industPin);
-  homeVal = analogRead(homePin);
-  capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
+  //industVal = analogRead(industPin);
+  //homeVal = analogRead(homePin);
+  //capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
+  
+  //Serial.println("Sending data: ");
+  //Serial.print("industrial: ");
+  //Serial.println(testVal);
+
   phant.add(industrial, testVal);
   testVal++;
   //phant.add(industrial, industVal);
@@ -211,9 +243,11 @@ int sendData()
   //Serial.println(phant.post());
   
   String request = phant.post();
-  Serial.println(request);
+  flushXB();
+  //Serial.println(request);
   xB.print(request);
-  xB.flush(); // Flush data so we get fresh stuff in
+  flushXB();
+  //xB.flush(); // Flush data so we get fresh stuff in
   
   // Check the response to make sure we receive a "200 OK".
   char response[12];
@@ -223,16 +257,21 @@ int sendData()
     {
       response[i] = xB.read();
     }
-    if (memcmp(response, "HTTP/1.1 200", 12) == 0)
+    if (memcmp(response, "HTTP/1.1 200", 12) == 0) {
+      Serial.println("SUCCESS");
       return 1;
+    }
     else
     {
+      Serial.println("ERROR");
       Serial.println(response);
       return 0; // Non-200 response
     }
   }
-  else // Otherwise timeout, no response from server
+  else {// Otherwise timeout, no response from server
+    Serial.println("TIMEOUT");
     return -1;
+  }
 }
 
 // readSensors() will simply update a handful of global variables
@@ -272,8 +311,7 @@ void setupHTTP(String address)
 void setupPins()
 {
   // Enter command mode, wait till we get there.
-  while(!commandMode(1))
-    ;
+  commandMode(1);
   
   command("ATD70", 2);
   command("ATSM1", 2);
@@ -293,7 +331,7 @@ void printIP()
     ;
   // Get rid of any data that may have already been in the
   // serial receive buffer:
-  xB.flush();
+  flushXB();
   // Send the ATMY command. Should at least respond with
   // "0.0.0.0\r" (7 characters):
   command("ATMY", 7);
@@ -313,7 +351,7 @@ void printIP()
 // For all of your connecting-to-WiFi-networks needs, we present
 // the connectWiFi() function. Supply it an SSID, encryption
 // setting, and passphrase, and it'll try its darndest to connect
-// to your network.
+// to connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK); your network.
 int connectWiFi(String id, byte auth, String psk)
 {
   const String CMD_SSID = "ATID";
@@ -349,7 +387,8 @@ int connectWiFi(String id, byte auth, String psk)
     Serial.print("Waiting to connect: ");
     Serial.println(status, HEX);
 
-    commandMode(1); // Enter command mode
+    commandMode(0);
+    while(!commandMode(1)){} // Enter command mode
 
     // Write AH (2 - Infrastructure) -- Locked in
     command("ATAH2", 2);
@@ -383,9 +422,11 @@ byte checkConnect(String id)
   while (!commandMode(1))
     ;
   command("ATAI", 2);
-  indust[0] = hexToInt(xB.read());
-  indust[1] = hexToInt(xB.read());
-  xB.flush();
+  char c0 = xB.read();
+  char c1 = xB.read();
+  indust[0] = hexToInt(c0);
+  indust[1] = hexToInt(c1);
+  flushXB();
 
   if (indust[0] == 0)
   {
@@ -418,27 +459,45 @@ byte checkConnect(String id)
 /////////////////////////////////////
 void command(String atcmd, int rsplen)
 {
-  xB.flush();
+  flushXB();
   xB.print(atcmd);
   xB.print("\r");
   waitForAvailable(rsplen);
 }
 
+void flushXB() {
+//  if(xB.available()) {
+//      Serial.print("Flushing: ");
+//      while(xB.available() > 0) {
+//          Serial.print(xB.read());
+//     }  
+//      Serial.println();
+//  }
+  
+  xB.flush();
+}
+
 int commandMode(boolean enter)
 {
-  xB.flush();
+  flushXB();
 
   if (enter)
   {
     char c;
     xB.print("+++");   // Send CMD mode string
-    waitForAvailable(1);
+    waitForAvailable(3);
+    /*Serial.println(xB.available());
     if (xB.available() > 0)
     {
       c = xB.read();
+      Serial.print(c);
       if (c == 'O') // That's the letter 'O', assume 'K' is next
+        c = xB.read();
+        Serial.print(c);
+        c = xB.read();
+        Serial.println(c);
         return 1; // IF we see "OK" return success
-    }
+    }*/
     return 0; // If no (or incorrect) receive, return fail
   }
   else
