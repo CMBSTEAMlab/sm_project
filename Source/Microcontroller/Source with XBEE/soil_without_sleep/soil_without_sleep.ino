@@ -1,5 +1,4 @@
 #include <XBee.h>
-#include <Narcoleptic.h>
 #include <Phant.h>
 #include <SoftwareSerial.h>
 #include <CapacitiveSensor.h>
@@ -15,7 +14,11 @@
 XBee radio;
 CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
 
-#define XBEE_SLEEP_PIN 7
+
+
+
+.
+
 #define COMMAND_TIMEOUT 2000 // ms
 ////////////////////////
 // WiFi Network Stuff //
