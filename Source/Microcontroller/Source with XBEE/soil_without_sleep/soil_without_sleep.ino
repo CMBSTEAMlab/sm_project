@@ -12,12 +12,12 @@
  */
 
 XBee radio;
-CapacitiveSensor   cs_4_2 = CapacitiveSensor(4,2);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
+CapacitiveSensor   cs_4_5 = CapacitiveSensor(4,5);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
 
 
 
 
-.
+
 
 #define COMMAND_TIMEOUT 2000 // ms
 ////////////////////////
@@ -89,9 +89,8 @@ void setup()
   // Set up sensor pins:
   pinMode(homePin, INPUT);
   pinMode(industPin, INPUT);
-  pinMode(XBEE_SLEEP_PIN, OUTPUT);
 
-  cs_4_2.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
+  cs_4_5.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
 
   // Set up serial ports:
   Serial.begin(9600);
@@ -103,7 +102,6 @@ void setup()
   Serial.println("Testing network");
   // connectWiFi will atindustt to connect to the given SSID, using
   // encryption mode "encrypt", and the passphrase string given.
-  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   // Once connected, print out our IP address for a sanity check:
   Serial.println("Connected!");
   Serial.print("IP Address: "); printIP(); Serial.println(); 
@@ -166,7 +164,7 @@ int sendData()
   //readSensors(); // Get updated values from sensors.
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
-  capacVal =  cs_4_2.capacitiveSensor(30);
+  capacVal =  (cs_4_5.capacitiveSensorRaw(30));
   phant.add(industrial, industVal);
   phant.add(homebrew, homeVal);
   phant.add(capacitive, capacVal);
@@ -224,7 +222,7 @@ void readSensors()
 {
   industVal = analogRead(industPin);
   homeVal = analogRead(homePin);
-  capacVal =  cs_4_2.capacitiveSensor(30);
+  capacVal =  cs_4_5.capacitiveSensor(30);
 }
 
 ///////////////////////////
