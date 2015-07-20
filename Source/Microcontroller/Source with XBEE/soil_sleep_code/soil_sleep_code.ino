@@ -17,7 +17,7 @@
 
 CapacitiveSensor   cs_4_5 = CapacitiveSensor(4,5);        // 10M resistor between pins 4 & 5, pin 5 is sensor pin, add a wire and or foil if desired
 
-#define XBEE_SLEEP_PIN 7
+#define XBEE_SLEEP_PIN 12
 #define COMMAND_TIMEOUT 10000 // ms
 ////////////////////////
 // WiFi Network Stuff //
@@ -65,7 +65,7 @@ const int homePin = A0; // Photocell input
 const int industPin = A1;  // TMP36 indust sensor input
 
 // opVoltage - Useful for converting ADC reading to voltage:
-const float opVoltage = 4.7;
+const float opVoltage = 4.7; 
 float industVal;
 int homeVal, coVal;
 long capacVal;
@@ -100,14 +100,18 @@ void setup()
 
   // Set up serial ports:
   Serial.begin(9600);
+  Serial.println("test");
   // Make sure the XBEE BAUD RATE matches its pre-set value
   // (defaults to 9600).
   xB.begin(XBEE_BAUD);
   
   
-  // Set up WiFi network
+  // Set up WiFi networkm
   Serial.println("Testing network");
-  // connectWiFi will atindustt to connect to the given SSID, using
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
+
+  //Serial.println("plz send help");
+  // connectWiFi will atindustt(attempt) to connect to the given SSID, using
   // encryption mode "encrypt", and the passphrase string given.
   connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   // Once connected, print out our IP address for a sanity check:
@@ -155,7 +159,7 @@ void loop()
 {
   //Turn the XBEE ON (Wakes it up)
   delay(5000);
-  //digitalWrite(XBEE_SLEEP_PIN, LOW);
+  digitalWrite(XBEE_SLEEP_PIN, LOW);
   //delay(5000);
   connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   //delay(5000);
@@ -167,6 +171,7 @@ void loop()
   int sendVal = 0;
   sendVal = sendData();
   while(sendVal != 1){
+    sendVal = sendData();
     Serial.print("Sending update...");
     if (sendVal== 1)
       Serial.println("SUCCESS!");
@@ -188,9 +193,10 @@ void loop()
   
   Serial.flush(); // Flush data so we get fresh stuff in
   //Puts the XBEE in sleep mode
-  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
+  digitalWrite(XBEE_SLEEP_PIN, HIGH);
   //puts the Aruino to sleepy
-  Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
+  Serial.print("narco at some point maybe");
+  delay(10000); //add "Narcoleptic." before this for narco
   
   
   
@@ -361,6 +367,7 @@ int connectWiFi(String id, byte auth, String psk)
   // Otherwise, time to configure some settings, and print
   // some status messages:
   int status;
+  //Serial.println("connectWiFi");
   while ((status = checkConnect(id)) != 0)
   {
     // Print a status message. If `status` isn't 0 (indicating
@@ -416,11 +423,13 @@ int connectWiFi(String id, byte auth, String psk)
 // That command will return with either a 0 (meaning connected)
 // or various values indicating different levels of no-connect.
 byte checkConnect(String id)
-{
+{  
+  //Serial.println("checkConnect");
   char indust[2];
   commandMode(0);
   while (!commandMode(1))
     ;
+  //Serial.println("in command mode");
   command("ATAI", 2);
   char c0 = xB.read();
   char c1 = xB.read();
@@ -480,13 +489,15 @@ void flushXB() {
 int commandMode(boolean enter)
 {
   flushXB();
-
+  //Serial.println("flushed");
   if (enter)
   {
     char c;
     xB.print("+++");   // Send CMD mode string
+    //Serial.println("+++");
     waitForAvailable(3);
-    /*Serial.println(xB.available());
+    //Serial.println("waited");
+    Serial.println(xB.available());
     if (xB.available() > 0)
     {
       c = xB.read();
@@ -497,7 +508,7 @@ int commandMode(boolean enter)
         c = xB.read();
         Serial.println(c);
         return 1; // IF we see "OK" return success
-    }*/
+    }
     return 0; // If no (or incorrect) receive, return fail
   }
   else
@@ -513,7 +524,6 @@ int waitForAvailable(int qty)
 
   while ((timeout-- > 0) && (xB.available() < qty))
     delay(1);
-
   return timeout;
 }
 

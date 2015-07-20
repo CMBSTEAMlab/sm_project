@@ -1,25 +1,49 @@
-#include <XBee.h>
-#include <Phant.h>
+/*****************************************************************
+Phant_XBee_WiFi.ino
+Post data to SparkFun's data stream server system (phant) using
+an XBee WiFi and XBee Shield.
+Jim Lindblom @ SparkFun Electronics
+Original Creation Date: May 20, 2014
+https://learn.sparkfun.com/tutorials/online-datalogging-with-an-xbee-wifi
+
+This sketch uses an XBee WiFi and an XBee Shield to get on
+the internet and POST analogRead values to SparkFun's data
+logging streams (http://data.sparkfun.com).
+
+Hardware Hookup:
+  The Arduino shield makes all of the connections you'll need
+  between Arduino and XBee WiFi. If you have the shield make
+  sure the SWITCH IS IN THE "DLINE" POSITION.
+
+  I've also got four separate analog sensors (methane, co,
+  temperature, and photocell) connected to pins A0-A3. Feel
+  free to switch that up. You can post analog data, digital 
+  data, strings, whatever you wish to the Phant server.
+
+Requires the lovely Phant library:
+  https://github.com/sparkfun/phant-arduino
+
+Development environment specifics:
+    IDE: Arduino 1.0.5
+    Hardware Platform: SparkFun RedBoard
+    XBee Shield & XBee WiFi (w/ trace antenna)
+
+This code is beerware; if you see me (or any other SparkFun 
+employee) at the local, and you've found our code helpful, please 
+buy us a round!
+
+Distributed as-is; no warranty is given.
+*****************************************************************/
+// SoftwareSerial is used to communicate with the XBee
 #include <SoftwareSerial.h>
-#include <CapacitiveSensor.h>
+// The Phant library makes creating POSTs super-easy
+#include <Phant.h>
 
-/*
- * CapitiveSense Library Demo Sketch
- * Paul Badger 2008
- * Uses a high value resistor e.g. 10M between send pin and receive pin
- * Resistor effects sensitivity, experiment with values, 50K - 50M. Larger resistor values yield larger sensor values.
- * Receive pin is the sensor pin - try different amounts of foil/metal on this pin
- */
-
-XBee radio;
-CapacitiveSensor   cs_4_5 = CapacitiveSensor(4,5);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
-
-
-
-
-
-
+// Time in ms, where we stop waiting for serial data to come in
+// 2s is usually pretty good. Don't go under 1000ms (entering
+// command mode takes about 1s).
 #define COMMAND_TIMEOUT 2000 // ms
+
 ////////////////////////
 // WiFi Network Stuff //
 ////////////////////////
@@ -42,13 +66,13 @@ String WIFI_PSK = "CMBGuest0987";
 String destIP = "54.86.132.254"; // data.sparkfun.com's IP address
 // Initialize the phant object:
 // Phant phant(server, publicKey, privateKey);
-Phant phant("data.sparkfun.com", "aGX3bzQLmQiRObamEjy3", "KEmwqzKp2KUr7eVmGkAz");
+Phant phant("data.sparkfun.com", "Public_Key", "Private_Key");
 // Phant field string defintions. Make sure these match the
 // fields you've defined in your data stream:
-
-const String homebrew = "homebrew";
-const String industrial = "industrial";
-const String capacitive = "capacitive";
+const String methaneField = "methane";
+const String coField = "co";
+const String tempField = "temp";
+const String lightField = "light";
 
 ////////////////
 // XBee Stuff //
@@ -62,21 +86,21 @@ const int XBEE_BAUD = 9600; // Your XBee's baud (9600 is default)
 /////////////////////////////
 // Sensors/Input Pin Stuff //
 /////////////////////////////
-const int homePin = A0; // Photocell input
-const int industPin = A1;  // TMP36 indust sensor input
-
+const int lightPin = A0; // Photocell input
+const int tempPin = A1;  // TMP36 temp sensor input
+const int coPin = A2;    // Carbon-monoxide sensor input
+const int methanePin = A3; // Methane sensor input
 // opVoltage - Useful for converting ADC reading to voltage:
 const float opVoltage = 4.7;
-float industVal;
-int homeVal, coVal;
-long capacVal;
+float tempVal;
+int lightVal, coVal, methaneVal;
 
 /////////////////////////
 // Update Rate Control //
 /////////////////////////
 // Phant limits you to 10 seconds between posts. Use this variable
 // to limit the update rate (in milliseconds):
-const unsigned long UPDATE_RATE = 10000; // 21,600,000ms = 6 Hours
+const unsigned long UPDATE_RATE = 300000; // 300000ms = 5 minutes
 unsigned long lastUpdate = 0; // Keep track of last update time
 
 ///////////
@@ -87,10 +111,10 @@ unsigned long lastUpdate = 0; // Keep track of last update time
 void setup()
 {
   // Set up sensor pins:
-  pinMode(homePin, INPUT);
-  pinMode(industPin, INPUT);
-
-  cs_4_5.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
+  pinMode(lightPin, INPUT);
+  pinMode(coPin, INPUT);
+  pinMode(methanePin, INPUT);
+  pinMode(tempPin, INPUT);
 
   // Set up serial ports:
   Serial.begin(9600);
@@ -100,8 +124,9 @@ void setup()
 
   // Set up WiFi network
   Serial.println("Testing network");
-  // connectWiFi will atindustt to connect to the given SSID, using
+  // connectWiFi will attempt to connect to the given SSID, using
   // encryption mode "encrypt", and the passphrase string given.
+  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   // Once connected, print out our IP address for a sanity check:
   Serial.println("Connected!");
   Serial.print("IP Address: "); printIP(); Serial.println(); 
@@ -129,26 +154,34 @@ void setup()
 // over the serial port.
 void loop()
 {
-
-  Serial.print("Sending update...");
-  if (sendData())
-    Serial.println("SUCCESS!");
-  else
-    Serial.println("Failed :(");
-
-  Serial.print("");
-  Serial.print(capacVal);                  // print sensor output 1
+  // If current time is UPDATE_RATE milliseconds greater than
+  // the last update rate, send new data.
+  if (millis() > (lastUpdate + UPDATE_RATE))
+  {
+    Serial.print("Sending update...");
+    if (sendData())
+      Serial.println("SUCCESS!");
+    else
+      Serial.println("Failed :(");
+    lastUpdate = millis();
+  }
+  // In the meanwhile, we'll print data to the serial monitor,
+  // just to let the world know our Arduino is still operational:
+  readSensors(); // Get updated values from sensors
+  Serial.print(millis()); // Timestamp
+  Serial.print(": ");
+  Serial.print(lightVal);
   Serial.print('\t');
-  Serial.print(homeVal);
+  Serial.print(tempVal);
   Serial.print('\t');
-  Serial.print(industVal);
-  Serial.print('\n');
-  //Puts the XBEE in sleep mode
-  delay(10000);
+  Serial.print(coVal);
+  Serial.print('\t');
+  Serial.println(methaneVal);
+  delay(1000);
 }
 
 ////////////////
-// sendData()                                                                                                                                                                     //
+// sendData() //
 ////////////////
 // sendData() makes use of the PHANT LIBRARY to send data to the
 // data.sparkfun.com server. We'll use phant.add() to add specific
@@ -161,17 +194,14 @@ int sendData()
   // First we need to add fields and values to send as parameters
   // Since we just need to read values from the analog pins, this
   // can be automized with a for loop:
-  //readSensors(); // Get updated values from sensors.
-  industVal = analogRead(industPin);
-  homeVal = analogRead(homePin);
-  capacVal =  (cs_4_5.capacitiveSensorRaw(30));
-  phant.add(industrial, industVal);
-  phant.add(homebrew, homeVal);
-  phant.add(capacitive, capacVal);
+  readSensors(); // Get updated values from sensors.
+  phant.add(tempField, tempVal);
+  phant.add(lightField, lightVal);
+  phant.add(methaneField, methaneVal);
+  phant.add(coField, coVal);
   // After our PHANT.ADD's we need to PHANT.POST(). The post needs
   // to be sent out the XBee. A simple "print" of that post will
   // take care of it.
-  //Serial.println(phant.post());
   xB.print(phant.post());
 
   // Check the response to make sure we receive a "200 OK". If 
@@ -196,33 +226,15 @@ int sendData()
     return -1;
 }
 
-int atCommand( char *command, uint8_t param ) {
-  // send local AT command
-  AtCommandRequest req = AtCommandRequest((uint8_t *) command, (uint8_t *) &param, sizeof(uint8_t));
-  radio.send(req);
-
-  // receive response frame
-  AtCommandResponse res = AtCommandResponse();
-  if(radio.readPacket(500)) {                               // read packet from radio
-     if(radio.getResponse().getApiId() == AT_RESPONSE) {    // right type?
-       radio.getResponse().getAtCommandResponse(res);
-       if(res.isOk()) {                                     // not an error?
-         return 0;
-       }
-     }
-  }
-
-  // if we get here, return a failure
-  return 1;
-}
-
 // readSensors() will simply update a handful of global variables
-// It updates industVal, homeVal, coVal, and capacVal
+// It updates tempVal, lightVal, coVal, and methaneVal
 void readSensors()
 {
-  industVal = analogRead(industPin);
-  homeVal = analogRead(homePin);
-  capacVal =  cs_4_5.capacitiveSensor(30);
+  tempVal = ((analogRead(tempPin)*opVoltage/1024.0)-0.5)*100;
+  tempVal = (tempVal * 9.0/5.0) + 32.0; // Convert to farenheit
+  lightVal = analogRead(lightPin);
+  methaneVal = analogRead(methanePin);
+  coVal = analogRead(coPin);  
 }
 
 ///////////////////////////
@@ -347,16 +359,16 @@ int connectWiFi(String id, byte auth, String psk)
 // or various values indicating different levels of no-connect.
 byte checkConnect(String id)
 {
-  char indust[2];
+  char temp[2];
   commandMode(0);
   while (!commandMode(1))
     ;
   command("ATAI", 2);
-  indust[0] = hexToInt(xB.read());
-  indust[1] = hexToInt(xB.read());
+  temp[0] = hexToInt(xB.read());
+  temp[1] = hexToInt(xB.read());
   xB.flush();
 
-  if (indust[0] == 0)
+  if (temp[0] == 0)
   {
     command("ATID", 1);
     int i=0;
@@ -375,10 +387,10 @@ byte checkConnect(String id)
   }
   else
   {
-    if (indust[1] == 0x13)
-      return indust[0];
+    if (temp[1] == 0x13)
+      return temp[0];
     else
-      return (indust[0]<<4) | indust[1];
+      return (temp[0]<<4) | temp[1];
   }
 }
 
@@ -428,11 +440,10 @@ int waitForAvailable(int qty)
 }
 
 byte hexToInt(char c)
-{
+{ 
   if (c >= 0x41) // If it's A-F
     return c - 0x37;
   else
     return c - 0x30;
 }
-
 
