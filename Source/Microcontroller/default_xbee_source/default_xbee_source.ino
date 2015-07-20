@@ -1,24 +1,49 @@
-//The sleeping with narcoleptic and XBEE do not work very well. Narcoleptic appeared to do nothing.
+/*****************************************************************
+Phant_XBee_WiFi.ino
+Post data to SparkFun's data stream server system (phant) using
+an XBee WiFi and XBee Shield.
+Jim Lindblom @ SparkFun Electronics
+Original Creation Date: May 20, 2014
+https://learn.sparkfun.com/tutorials/online-datalogging-with-an-xbee-wifi
 
-#include <Narcoleptic.h>
+This sketch uses an XBee WiFi and an XBee Shield to get on
+the internet and POST analogRead values to SparkFun's data
+logging streams (http://data.sparkfun.com).
 
-#include <Phant.h>
+Hardware Hookup:
+  The Arduino shield makes all of the connections you'll need
+  between Arduino and XBee WiFi. If you have the shield make
+  sure the SWITCH IS IN THE "DLINE" POSITION.
+
+  I've also got four separate analog sensors (methane, co,
+  temperature, and photocell) connected to pins A0-A3. Feel
+  free to switch that up. You can post analog data, digital 
+  data, strings, whatever you wish to the Phant server.
+
+Requires the lovely Phant library:
+  https://github.com/sparkfun/phant-arduino
+
+Development environment specifics:
+    IDE: Arduino 1.0.5
+    Hardware Platform: SparkFun RedBoard
+    XBee Shield & XBee WiFi (w/ trace antenna)
+
+This code is beerware; if you see me (or any other SparkFun 
+employee) at the local, and you've found our code helpful, please 
+buy us a round!
+
+Distributed as-is; no warranty is given.
+*****************************************************************/
+// SoftwareSerial is used to communicate with the XBee
 #include <SoftwareSerial.h>
-#include <CapacitiveSensor.h>
+// The Phant library makes creating POSTs super-easy
+#include <Phant.h>
 
-/*
- * CapitiveSense Library Demo Sketch
- * Paul Badger 2008
- * Uses a high value resistor e.g. 10M between send pin and receive pin
- * Resistor effects sensitivity, experiment with values, 50K - 50M. Larger resistor values yield larger sensor values.
- * Receive pin is the sensor pin - try different amounts of foil/metal on this pin
- */
+// Time in ms, where we stop waiting for serial data to come in
+// 2s is usually pretty good. Don't go under 1000ms (entering
+// command mode takes about 1s).
+#define COMMAND_TIMEOUT 2000 // ms
 
-
-CapacitiveSensor   cs_4_5 = CapacitiveSensor(4,5);        // 10M resistor between pins 4 & 5, pin 5 is sensor pin, add a wire and or foil if desired
-
-#define XBEE_SLEEP_PIN 12
-#define COMMAND_TIMEOUT 10000 // ms
 ////////////////////////
 // WiFi Network Stuff //
 ////////////////////////
@@ -41,13 +66,13 @@ String WIFI_PSK = "CMBGuest0987";
 String destIP = "54.86.132.254"; // data.sparkfun.com's IP address
 // Initialize the phant object:
 // Phant phant(server, publicKey, privateKey);
-Phant phant("data.sparkfun.com", "aGX3bzQLmQiRObamEjy3", "KEmwqzKp2KUr7eVmGkAz");
+Phant phant("data.sparkfun.com", "Public_Key", "Private_Key");
 // Phant field string defintions. Make sure these match the
 // fields you've defined in your data stream:
-
-const String homebrew = "homebrew";
-const String industrial = "industrial";
-const String capacitive = "capacitive";
+const String methaneField = "methane";
+const String coField = "co";
+const String tempField = "temp";
+const String lightField = "light";
 
 ////////////////
 // XBee Stuff //
@@ -61,24 +86,21 @@ const int XBEE_BAUD = 9600; // Your XBee's baud (9600 is default)
 /////////////////////////////
 // Sensors/Input Pin Stuff //
 /////////////////////////////
-const int homePin = A0; // Photocell input
-const int industPin = A1;  // TMP36 indust sensor input
-
+const int lightPin = A0; // Photocell input
+const int tempPin = A1;  // TMP36 temp sensor input
+const int coPin = A2;    // Carbon-monoxide sensor input
+const int methanePin = A3; // Methane sensor input
 // opVoltage - Useful for converting ADC reading to voltage:
-const float opVoltage = 4.7; 
-float industVal;
-int homeVal, coVal;
-long capacVal;
-
-int testVal = 1;
+const float opVoltage = 4.7;
+float tempVal;
+int lightVal, coVal, methaneVal;
 
 /////////////////////////
 // Update Rate Control //
 /////////////////////////
 // Phant limits you to 10 seconds between posts. Use this variable
 // to limit the update rate (in milliseconds):
-const unsigned long UPDATE_RATE = 10000; // 21,600,000ms = 6 Hours
-
+const unsigned long UPDATE_RATE = 300000; // 300000ms = 5 minutes
 unsigned long lastUpdate = 0; // Keep track of last update time
 
 ///////////
@@ -88,30 +110,21 @@ unsigned long lastUpdate = 0; // Keep track of last update time
 // SERIAL ports, and CONNECT TO THE WIFI NETWORK.
 void setup()
 {
-  
-  
   // Set up sensor pins:
-  pinMode(homePin, INPUT);
-  pinMode(industPin, INPUT);
-  pinMode(XBEE_SLEEP_PIN, OUTPUT);
-  
-
-  cs_4_5.set_CS_AutocaL_Millis(0xFFFFFFFF);     // turn off autocalibrate on channel 1 - just as an example
+  pinMode(lightPin, INPUT);
+  pinMode(coPin, INPUT);
+  pinMode(methanePin, INPUT);
+  pinMode(tempPin, INPUT);
 
   // Set up serial ports:
   Serial.begin(9600);
-  Serial.println("test");
   // Make sure the XBEE BAUD RATE matches its pre-set value
   // (defaults to 9600).
   xB.begin(XBEE_BAUD);
-  
-  
-  // Set up WiFi networkm
-  Serial.println("Testing network");
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
 
-  //Serial.println("plz send help");
-  // connectWiFi will atindustt(attempt) to connect to the given SSID, using
+  // Set up WiFi network
+  Serial.println("Testing network");
+  // connectWiFi will attempt to connect to the given SSID, using
   // encryption mode "encrypt", and the passphrase string given.
   connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
   // Once connected, print out our IP address for a sanity check:
@@ -119,23 +132,16 @@ void setup()
   Serial.print("IP Address: "); printIP(); Serial.println(); 
 
   // setupHTTP() will set up the destination address, port, and
-  // make sure we're in TCP mode:  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
-  //connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
-  //connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
-
+  // make sure we're in TCP mode:
   setupHTTP(destIP);
-  delay(2000);
-  
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
-  setupPins();
-  //digitalWrite(XBEE_SLEEP_PIN, HIGH);
+
   // Once everything's set up, send a data stream to make sure
   // everything check's out:
- // Serial.print("Sending update...");
- // if (sendData())
- //   Serial.println("SUCCESS!");
- // else
- //   Serial.println("Failed :(");
+  Serial.print("Sending update...");
+  if (sendData())
+    Serial.println("SUCCESS!");
+  else
+    Serial.println("Failed :(");
 }
 
 //////////
@@ -146,74 +152,33 @@ void setup()
 // to be posted.
 // Otherwise, to kill time, it'll print out the sensor values
 // over the serial port.
-/*void loop()
-{
-  Serial.println("sleep xbee");
-  digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  delay(5000);
-  Serial.println("wake up xbee");
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
-  delay(5000);  
-}*/
 void loop()
 {
-  //Turn the XBEE ON (Wakes it up)
-  delay(5000);
-  digitalWrite(XBEE_SLEEP_PIN, LOW);
-  //delay(5000);
-  connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK);
-  //delay(5000);
-  Serial.println("Connected!");
-  Serial.print("IP Address: "); printIP(); Serial.println(); 
-  setupHTTP(destIP);
-   
-  readSensors();
-  int sendVal = 0;
-  sendVal = sendData();
-  while(sendVal != 1){
-    sendVal = sendData();
+  // If current time is UPDATE_RATE milliseconds greater than
+  // the last update rate, send new data.
+  if (millis() > (lastUpdate + UPDATE_RATE))
+  {
     Serial.print("Sending update...");
-    if (sendVal== 1)
+    if (sendData())
       Serial.println("SUCCESS!");
-    else if(sendVal == -1)
-      Serial.println("Timeout");
     else
       Serial.println("Failed :(");
+    lastUpdate = millis();
   }
-  //separate
-  Serial.print("");
-  Serial.print(capacVal);                  // print sensor output 1
-  Serial.print("\t ");
-  Serial.print(homeVal);
+  // In the meanwhile, we'll print data to the serial monitor,
+  // just to let the world know our Arduino is still operational:
+  readSensors(); // Get updated values from sensors
+  Serial.print(millis()); // Timestamp
+  Serial.print(": ");
+  Serial.print(lightVal);
   Serial.print('\t');
-  Serial.print(testVal);
-  //Serial.print(industVal);
-  Serial.print('\n');
-  //delay(5000);
-  
-  Serial.flush(); // Flush data so we get fresh stuff in
-  //Puts the XBEE in sleep mode
-  digitalWrite(XBEE_SLEEP_PIN, HIGH);
-  //puts the Aruino to sleepy
-  Serial.print("narco at some point maybe");
-  delay(10000); //add "Narcoleptic." before this for narco
-  
-  
-  
+  Serial.print(tempVal);
+  Serial.print('\t');
+  Serial.print(coVal);
+  Serial.print('\t');
+  Serial.println(methaneVal);
+  delay(1000);
 }
-/*void loop()
-{
-    while(sendData() == -1) {
-        delay(1000);
-    }
-     testVal++;
-    digitalWrite(XBEE_SLEEP_PIN, HIGH);
-    Narcoleptic.delay(10000); //add "Narcoleptic." before this for narco
-    //delay(10000);
-    digitalWrite(XBEE_SLEEP_PIN, LOW);
-  
-  
-}*/
 
 ////////////////
 // sendData() //
@@ -224,38 +189,24 @@ void loop()
 // phant.post() to send that data up to the server.
 int sendData()
 {
-
+  xB.flush(); // Flush data so we get fresh stuff in
   // IMPORTANT PHANT STUFF!!!
   // First we need to add fields and values to send as parameters
   // Since we just need to read values from the analog pins, this
   // can be automized with a for loop:
-  //readSensors(); // Get updated values from sensors.
-  //industVal = analogRead(industPin);
-  //homeVal = analogRead(homePin);
-  //capacVal =  (cs_4_5.capacitiveSensorRaw(50)/50);
-  
-  //Serial.println("Sending data: ");
-  //Serial.print("industrial: ");
-  //Serial.println(testVal);
-
-  phant.add(industrial, testVal);
-  testVal++;
-  //phant.add(industrial, industVal);
-  phant.add(homebrew, homeVal);
-  phant.add(capacitive, capacVal);
+  readSensors(); // Get updated values from sensors.
+  phant.add(tempField, tempVal);
+  phant.add(lightField, lightVal);
+  phant.add(methaneField, methaneVal);
+  phant.add(coField, coVal);
   // After our PHANT.ADD's we need to PHANT.POST(). The post needs
   // to be sent out the XBee. A simple "print" of that post will
   // take care of it.
-  //Serial.println(phant.post());
-  
-  String request = phant.post();
-  flushXB();
-  //Serial.println(request);
-  xB.print(request);
-  flushXB();
-  //xB.flush(); // Flush data so we get fresh stuff in
-  
-  // Check the response to make sure we receive a "200 OK".
+  xB.print(phant.post());
+
+  // Check the response to make sure we receive a "200 OK". If 
+  // we were good little programmers we'd check the content of
+  // the OK response. If we were good little programmers...
   char response[12];
   if (waitForAvailable(12) > 0)
   {
@@ -263,30 +214,27 @@ int sendData()
     {
       response[i] = xB.read();
     }
-    if (memcmp(response, "HTTP/1.1 200", 12) == 0) {
-      Serial.println("SUCCESS");
+    if (memcmp(response, "HTTP/1.1 200", 12) == 0)
       return 1;
-    }
     else
     {
-      Serial.println("ERROR");
       Serial.println(response);
       return 0; // Non-200 response
     }
   }
-  else {// Otherwise timeout, no response from server
-    Serial.println("TIMEOUT");
+  else // Otherwise timeout, no response from server
     return -1;
-  }
 }
 
 // readSensors() will simply update a handful of global variables
-// It updates industVal, homeVal, coVal, and capacVal
+// It updates tempVal, lightVal, coVal, and methaneVal
 void readSensors()
 {
-  industVal = analogRead(industPin);
-  homeVal = analogRead(homePin);
-  capacVal =  cs_4_5.capacitiveSensor(30);
+  tempVal = ((analogRead(tempPin)*opVoltage/1024.0)-0.5)*100;
+  tempVal = (tempVal * 9.0/5.0) + 32.0; // Convert to farenheit
+  lightVal = analogRead(lightPin);
+  methaneVal = analogRead(methanePin);
+  coVal = analogRead(coPin);  
 }
 
 ///////////////////////////
@@ -314,17 +262,6 @@ void setupHTTP(String address)
   commandMode(0); // Exit command mode when done
 }
 
-void setupPins()
-{
-  // Enter command mode, wait till we get there.
-  commandMode(1);
-  
-  command("ATD70", 2);
-  command("ATSM1", 2);
-
-  commandMode(0); // Exit command mode when done
-}
-
 ///////////////
 // printIP() //
 ///////////////
@@ -337,7 +274,7 @@ void printIP()
     ;
   // Get rid of any data that may have already been in the
   // serial receive buffer:
-  flushXB();
+  xB.flush();
   // Send the ATMY command. Should at least respond with
   // "0.0.0.0\r" (7 characters):
   command("ATMY", 7);
@@ -357,7 +294,7 @@ void printIP()
 // For all of your connecting-to-WiFi-networks needs, we present
 // the connectWiFi() function. Supply it an SSID, encryption
 // setting, and passphrase, and it'll try its darndest to connect
-// to connectWiFi(WIFI_SSID, WIFI_EE, WIFI_PSK); your network.
+// to your network.
 int connectWiFi(String id, byte auth, String psk)
 {
   const String CMD_SSID = "ATID";
@@ -367,7 +304,6 @@ int connectWiFi(String id, byte auth, String psk)
   // Otherwise, time to configure some settings, and print
   // some status messages:
   int status;
-  //Serial.println("connectWiFi");
   while ((status = checkConnect(id)) != 0)
   {
     // Print a status message. If `status` isn't 0 (indicating
@@ -394,8 +330,7 @@ int connectWiFi(String id, byte auth, String psk)
     Serial.print("Waiting to connect: ");
     Serial.println(status, HEX);
 
-    commandMode(0);
-    while(!commandMode(1)){} // Enter command mode
+    commandMode(1); // Enter command mode
 
     // Write AH (2 - Infrastructure) -- Locked in
     command("ATAH2", 2);
@@ -423,21 +358,17 @@ int connectWiFi(String id, byte auth, String psk)
 // That command will return with either a 0 (meaning connected)
 // or various values indicating different levels of no-connect.
 byte checkConnect(String id)
-{  
-  //Serial.println("checkConnect");
-  char indust[2];
+{
+  char temp[2];
   commandMode(0);
   while (!commandMode(1))
     ;
-  //Serial.println("in command mode");
   command("ATAI", 2);
-  char c0 = xB.read();
-  char c1 = xB.read();
-  indust[0] = hexToInt(c0);
-  indust[1] = hexToInt(c1);
-  flushXB();
+  temp[0] = hexToInt(xB.read());
+  temp[1] = hexToInt(xB.read());
+  xB.flush();
 
-  if (indust[0] == 0)
+  if (temp[0] == 0)
   {
     command("ATID", 1);
     int i=0;
@@ -456,10 +387,10 @@ byte checkConnect(String id)
   }
   else
   {
-    if (indust[1] == 0x13)
-      return indust[0];
+    if (temp[1] == 0x13)
+      return temp[0];
     else
-      return (indust[0]<<4) | indust[1];
+      return (temp[0]<<4) | temp[1];
   }
 }
 
@@ -468,45 +399,25 @@ byte checkConnect(String id)
 /////////////////////////////////////
 void command(String atcmd, int rsplen)
 {
-  flushXB();
+  xB.flush();
   xB.print(atcmd);
   xB.print("\r");
   waitForAvailable(rsplen);
 }
 
-void flushXB() {
-//  if(xB.available()) {
-//      Serial.print("Flushing: ");
-//      while(xB.available() > 0) {
-//          Serial.print(xB.read());
-//     }  
-//      Serial.println();
-//  }
-  
-  xB.flush();
-}
-
 int commandMode(boolean enter)
 {
-  flushXB();
-  //Serial.println("flushed");
+  xB.flush();
+
   if (enter)
   {
     char c;
     xB.print("+++");   // Send CMD mode string
-    //Serial.println("+++");
-    waitForAvailable(3);
-    //Serial.println("waited");
-    Serial.println(xB.available());
+    waitForAvailable(1);
     if (xB.available() > 0)
     {
       c = xB.read();
-      Serial.print(c);
       if (c == 'O') // That's the letter 'O', assume 'K' is next
-        c = xB.read();
-        Serial.print(c);
-        c = xB.read();
-        Serial.println(c);
         return 1; // IF we see "OK" return success
     }
     return 0; // If no (or incorrect) receive, return fail
@@ -524,15 +435,15 @@ int waitForAvailable(int qty)
 
   while ((timeout-- > 0) && (xB.available() < qty))
     delay(1);
+
   return timeout;
 }
 
 byte hexToInt(char c)
-{
+{ 
   if (c >= 0x41) // If it's A-F
     return c - 0x37;
   else
     return c - 0x30;
 }
-
 
