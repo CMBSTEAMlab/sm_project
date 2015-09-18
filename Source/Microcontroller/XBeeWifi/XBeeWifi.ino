@@ -1,11 +1,15 @@
 #include <Phant.h>
 #include <Narcoleptic.h>
+#include <CapacitiveSensor.h>
 
+//#define DEBUG // uncomment this to print debugging information to Serial monitor, 
+                // comment out when not connected via USB or program will not progress past setup
 #define COMMAND_TIMEOUT 15000
+#define XB_SERIAL Serial1
 
-//const String WIFI_SSID = "FreakinSweet";
-const String WIFI_SSID = "CMBozeman Guest";
+const String WIFI_SSID = "CMB STEAMlab";
 const String WIFI_PSK = "CMBGuest0987";
+const String stationID = "CMB_MONTERRA1"; // ID of the monitoring station, this value will be sent to phant
 
 enum encryption{NO_SECURITY, WPA_TKIP, WPA2_AES, WEP};
 const encryption WIFI_EE = WPA2_AES;
@@ -19,31 +23,40 @@ const encryption WIFI_EE = WPA2_AES;
 const String destIP = "69.145.204.62"; // CMB IP address
 const String destPort = "1F90"; // hex for port 8080
 
+//Phant phant("data.sparkfun.com", "8dLOAE2157Tp9xqmWNz3", "pzJvWEV6oYTXdPxE8Kpm");
 //Phant phant("192.168.1.122", "Z0wjAMb8YDSlNxKV6ZexuMgaMAz", "x7OjVwl9QgIvEyjMgqmyFgKegVO");
-//Phant phant("data.sparkfun.com", "JxLNaEoE1XSOb1RZ4WDO", "gzJ50pDpW2T0w1yE2dg0");
 Phant phant("69.145.204.62", "mqBpa2Gdg6urqo4XzA6rCGvMeMEJ", "jLNzWvK07VhDlaeb9x5DCD0jQjmL");
+//Phant phant("69.145.204.62", "vWoxJEqQvASpYL9vlB2JiyPb6yd", "r3ZqdGpP6WFwqjg8m37ES04qQ0d");
 
 const String moistureField = "moisture";
+const String stationIDField = "stationid";
+const String attemptField = "attempt";
+const String sequenceField = "sequence";
 
 const byte XB_SLEEP_PIN = 6; // XBee's DTR pin
-const byte XB_CTS_PIN = 13; // XBee's nCTS pin
+const byte XB_ON_PIN = 13; // XBee's ON pin
 const int XBEE_BAUD = 9600; // Your XBee's baud (9600 is default)
 
-int test = 0;
+CapacitiveSensor cs = CapacitiveSensor(9,10); 
+long moistureReading;
+unsigned long seq = 0;
 
+const unsigned long DEBUG_UPDATE_DELAY = 20000;
 const unsigned long UPDATE_DELAY = 300000;
-
-#define XB_SERIAL Serial1
+//const unsigned long UPDATE_DELAY = 20000;
 
 void setup() {
+  cs.set_CS_AutocaL_Millis(0xFFFFFFFF);
+  
   pinMode(XB_SLEEP_PIN, OUTPUT);
   digitalWrite(XB_SLEEP_PIN, LOW);
-  pinMode(XB_CTS_PIN, INPUT);
+  
+  pinMode(XB_ON_PIN, INPUT);
 
 #ifdef DEBUG
   Serial.begin(9600);
- // while(!Serial) {
- // }
+  while(!Serial) {
+  }
   Serial.println("In setup()");
 #endif
   
@@ -65,6 +78,10 @@ void setupSleepMode() {
   if(!waitForOK()) {
   }
 
+  command("ATD70");
+  if(!waitForOK()) {
+  }
+
   command("ATD81");
   if(!waitForOK()) {
   }
@@ -74,11 +91,19 @@ void setupSleepMode() {
   }
 }
 
+void readData() {
+  moistureReading = cs.capacitiveSensorRaw(30);
+}
+
 void loop() {
+  seq++;
+  
   wakeXBee();
 
+  readData();
+
   int attempts = 0;
-  while(!sendData() && attempts < 10) {
+  while(!sendData(attempts+1) && attempts < 10) {
      attempts++;
 #ifdef DEBUG
      Serial.print("Failed attempt ");
@@ -94,8 +119,11 @@ void loop() {
 
   delay(1000);
 
-  //delay(UPDATE_DELAY); // use this when connected to USB to debug with the Serial monitor
+#ifdef DEBUG
+  delay(DEBUG_UPDATE_DELAY); // use this when connected to USB to debug with the Serial monitor
+#else
   Narcoleptic.delay(UPDATE_DELAY); // don't use when connected to USB
+#endif
 }
 
 void wakeXBee() {
@@ -135,11 +163,14 @@ void sleepXBee() {
   digitalWrite(XB_SLEEP_PIN, HIGH);
 }
 
-bool sendData() {
+bool sendData(int attempt) {
   bool success = false;
   XB_SERIAL.flush();
 
-  phant.add(moistureField, test);
+  phant.add(moistureField, moistureReading);
+  phant.add(stationIDField, stationID);
+  phant.add(attemptField, attempt);
+  phant.add(sequenceField, seq);
   String request = phant.post();
 
   int status;
@@ -175,7 +206,6 @@ bool sendData() {
       Serial.println("SUCCESS!");
 #endif
       success = true;
-      test++;
     } else {
 #ifdef DEBUG
       Serial.println("FAILURE!");
@@ -385,7 +415,14 @@ void command(String atcmd) {
 }
 
 void writeToXB(String atcmd) {
-    //while(digitalRead(XB_CTS_PIN)) {}
+  /*
+    while(!digitalRead(XB_ON_PIN)) {
+#ifdef DEBUG
+        Serial.println("XBee ON pin OFF, not sending serial data...");
+        delay(100);
+#endif
+    }
+    */
     XB_SERIAL.print(atcmd);
     delay(10);
 }

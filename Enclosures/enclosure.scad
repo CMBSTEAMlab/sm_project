@@ -26,10 +26,10 @@ mount_attachment_height = 2.5*inches2mm;
 mount_attachment_depth = 1/8*inches2mm;
 
 bolt_diameter = 4.7;
-hex_diameter = 8; // M4 nut
-hex_thickness = 3; // M4 nut
-//hex_diameter = 9.7; // #8 nut
-//hex_thickness = 3.2; // #8 nut
+//hex_diameter = 8; // M4 nut
+//hex_thickness = 3; // M4 nut
+hex_diameter = 9.7; // #8 nut
+hex_thickness = 3.2; // #8 nut
 
 post_diameter = 3/8*inches2mm;
 post_hole_diameter = 3;
@@ -39,10 +39,13 @@ post_offset = 1/2*inches2mm;
 
 l_hole_diameter = post_hole_diameter+.7;
 l_width = 2.5*inches2mm;
-l_depth = 2*inches2mm;
+l_depth = 1.75*inches2mm;
 l_height = 3.5*inches2mm;
 l_offset = 4;
 l_thickness = 5;
+l_post_height = 6;
+l_post_diameter = 6;
+l_post_hole_diameter = 1.75;
 
 cover_height = 4*inches2mm;
 
@@ -51,8 +54,8 @@ holder_depth = 2.5*inches2mm;
 holder_height = 2*inches2mm;
 thickness = 3;
 base_thickness = 6;
-lip_width = 3/8*inches2mm;
-//lip_width = hex_diameter+1;
+//lip_width = 3/8*inches2mm;
+lip_width = hex_diameter+1;
 lip_pitch = 30;
 
 wire_hole_diameter = 1/4*inches2mm;
@@ -68,15 +71,19 @@ l_separation = 3;
 square_off_width = lip_width-.1;
 square_off_height = base_thickness;
 square_off_z = lip_pitch;
+
+
 $fs = .25;
 $fa = .25;
 
 //cover();
-//holder();
+holder();
 //l_mount();
 //battery_base();
-battery_holder();
+//battery_holder();
 //battery_slider();
+
+//protoboard();
 
 cover_width = holder_width+2*fit_tol+2*thickness;
 cover_depth = holder_depth+2*fit_tol+2*thickness;
@@ -154,14 +161,52 @@ module l_holes(d) {
     translate([base_width/2+post_separation/2,base_depth/2+post_offset,-separation]) cylinder(r=d/2, h=post_height+1+l_separation+l_thickness);
 }
 
+
+proto_thickness = 1.7;
+proto_height = 76;
+proto_width = 50.5;
+proto_hole_diameter = 3;
+
+module protoboard() {
+    translate([base_width/2, base_depth/2-l_offset-l_depth/2+l_thickness/2+15, -separation+post_height+l_height/2+l_separation+3]) translate([-proto_width/2, -proto_thickness/2, -proto_height/2]) difference() {
+      cube([proto_width, proto_thickness, proto_height]);
+        
+      translate([proto_width/2, proto_thickness/2, proto_height-1.5-proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=proto_hole_diameter/2, h=proto_thickness+2, center=true);
+      
+      translate([1.3+proto_hole_diameter/2, proto_thickness/2, 1.3+proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=proto_hole_diameter/2, h=proto_thickness+2, center=true);
+        
+      translate([proto_width-(1.3+proto_hole_diameter/2), proto_thickness/2, 1.3+proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=proto_hole_diameter/2, h=proto_thickness+2, center=true);
+    }
+}
+
+
 module l_mount() {
     
     difference() {
       union() {
         translate([base_width/2, base_depth/2-l_offset, -separation+post_height+l_thickness/2+l_separation]) cube([l_width, l_depth, l_thickness], center=true); 
-        //translate([
+        translate([base_width/2, base_depth/2-l_offset-l_depth/2+l_thickness/2, -separation+post_height+l_height/2+l_separation]) cube([l_width, l_thickness, l_height], center=true);
+          
+          
+      translate([base_width/2, base_depth/2-l_offset-l_depth/2+l_thickness+l_post_height/2-.5, -separation+post_height+l_height/2+l_separation+3]) translate([-proto_width/2, -proto_thickness/2, -proto_height/2]) {
+          
+          translate([proto_width/2, proto_thickness/2, proto_height-1.5-proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=l_post_diameter/2, h=l_post_height+1, center=true);
+      
+      translate([1.3+proto_hole_diameter/2, proto_thickness/2, 1.3+proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=l_post_diameter/2, h=l_post_height+1, center=true);
+        
+      translate([proto_width-(1.3+proto_hole_diameter/2), proto_thickness/2, 1.3+proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=l_post_diameter/2, h=l_post_height+1, center=true);
+          }
+          
       }
       l_holes(l_hole_diameter);
+      translate([base_width/2, base_depth/2-l_offset-l_depth/2+l_thickness+l_post_height/2, -separation+post_height+l_height/2+l_separation+3]) translate([-proto_width/2, -proto_thickness/2, -proto_height/2]) {
+          
+          translate([proto_width/2, proto_thickness/2, proto_height-1.5-proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=l_post_hole_diameter/2, h=l_post_height+1, center=true);
+      
+      translate([1.3+proto_hole_diameter/2, proto_thickness/2, 1.3+proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=l_post_hole_diameter/2, h=l_post_height+1, center=true);
+        
+      translate([proto_width-(1.3+proto_hole_diameter/2), proto_thickness/2, 1.3+proto_hole_diameter/2]) rotate([90, 0, 0]) cylinder(r=l_post_hole_diameter/2, h=l_post_height+1, center=true);
+          }
     }
     
 }
@@ -202,7 +247,7 @@ module wire_hole() {
     translate([base_width/2,base_depth-(lip_width+thickness+wire_hole_diameter+fit_tol), -battery_separation-separation-2*thickness-1]) cylinder(r=wire_hole_diameter/2, h=2*thickness+separation+battery_separation+2);
 }
 module power_hole() {
-    translate([base_width/2,base_depth/2, -battery_separation-separation-2*thickness-1]) cylinder(r=power_hole_diameter/2, h=2*thickness+separation+battery_separation+2);
+    translate([base_width/2,base_depth/2, -battery_separation-separation-2*thickness-1]) cylinder(r=power_hole_diameter/2, h=2*thickness+separation+battery_separation+2+post_height+l_thickness);
 }
 
 module battery_base() {
@@ -250,7 +295,7 @@ module local_battery_holder() {
   translate([base_width/2, base_depth/2-battery_offset, battery_holder_height/2]) cube([battery_holder_width+2*thickness, battery_holder_depth+2*thickness, battery_holder_height], center=true);
   
   }
-  
+  translate([base_width/2, base_depth/2-battery_offset, battery_holder_height/2]) cube([battery_holder_width, battery_holder_depth, battery_holder_height+1], center=true);
   }
 }
 
@@ -261,15 +306,16 @@ module battery_slider() {
 slider_width = battery_width+2*thickness+2*battery_lip_width+battery_slider_extra_width;
 slider_depth = battery_depth+2*thickness+2*battery_lip_width+battery_slider_extra_height;
 slider_height = 2*battery_lip_pitch+battery_slider_gasket_thickness+battery_slider_extra_height;
+slider_tol = .5;
 module local_battery_slider() {
     difference() {
       cube([slider_width,slider_depth,slider_height],center = true);
       
       hull() {
-        translate([0, 0, -.5+battery_slider_gasket_thickness/2+battery_lip_pitch]) cube([battery_width+2*thickness, battery_depth+2*thickness, 1], center=true);
-        translate([0, 0, .5+battery_slider_gasket_thickness/2]) cube([battery_width+2*thickness+2*battery_lip_width, battery_depth+2*thickness+2*battery_lip_width, 1], center=true);
-        translate([0, 0, -(.5+battery_slider_gasket_thickness/2)]) cube([battery_width+2*thickness+2*battery_lip_width, battery_depth+2*thickness+2*battery_lip_width, 1], center=true);
-        translate([0, 0, -(-.5+battery_slider_gasket_thickness/2+battery_lip_pitch)]) cube([battery_width+2*thickness, battery_depth+2*thickness, 1], center=true);
+        translate([0, 0, -.5+battery_slider_gasket_thickness/2+battery_lip_pitch]) cube([battery_width+2*thickness+2*slider_tol, battery_depth+2*thickness+2*slider_tol, 1], center=true);
+        translate([0, 0, .5+battery_slider_gasket_thickness/2]) cube([battery_width+2*thickness+2*battery_lip_width+2*slider_tol, battery_depth+2*thickness+2*battery_lip_width+2*slider_tol, 1], center=true);
+        translate([0, 0, -(.5+battery_slider_gasket_thickness/2)]) cube([battery_width+2*thickness+2*battery_lip_width+2*slider_tol, battery_depth+2*thickness+2*battery_lip_width+2*slider_tol, 1], center=true);
+        translate([0, 0, -(-.5+battery_slider_gasket_thickness/2+battery_lip_pitch)]) cube([battery_width+2*thickness+2*slider_tol, battery_depth+2*thickness+2*slider_tol, 1], center=true);
       }
       cube([battery_width+2*thickness, battery_depth+2*thickness, slider_height+2], center=true);
       translate([0,battery_depth/2+thickness+(battery_lip_width+battery_slider_extra_depth/2)/2,0]) cube([battery_width+2*thickness, battery_lip_width+battery_slider_extra_depth/2+2, slider_height+2], center=true);
