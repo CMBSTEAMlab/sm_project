@@ -1,0 +1,44 @@
+Yufu - worked on Meeting Minutes.
+
+Owen - soldered headers onto Arduino nano. then test new arduino. creating housing for arduino nano
+
+Bam Bum BA!! Achievement: "2" working arduino nanos
+
+Ren - looking at and trying to understand the seed grove sensor.
+
+Henry - working on calibrating the capacitive sensor so the values are standard. retest the Arduino.
+
+Nic - working on calibrating the capacitive sensor so the values are standard. retest the Arduino.
+
+Harry - looking at and trying to understand the seed grove sensor.
+
+Gabe - "worked" on Meeting minutes and studied Disney and Minecraft movie trailers and Star Warson YouTube
+
+Luc - helped Owen solder.
+
+How far we have come
+
+capacitive
+	Waterproof- Ren Harry and Owen
+		spray on?
+Code stuff
+	Sleeping
+	power management
+Housing - Owen
+	3D print files
+	whats inside the housing?
+
+Next week:
+Capacitive sensor
+	Ren: Changes to pcb design to include voltage divider and updated connections.
+
+At end:
+ Owen - developing a housing compartment for final project.
+
+
+
+
+
+
+
+

@@ -1,18 +1,19 @@
 #include <Phant.h>
 #include <Narcoleptic.h>
 #include <CapacitiveSensor.h>
-
-//#define DEBUG // uncomment this to print debugging information to Serial monitor, 
+//
+#define SETUP_MODE
+#define DEBUG // uncomment this to print debugging information to Serial monitor, 
                 // comment out when not connected via USB or program will not progress past setup
-#define COMMAND_TIMEOUT 15000
-#define XB_SERIAL Serial1
 
-const String WIFI_SSID = "CMB STEAMlab";
-const String WIFI_PSK = "CMBGuest0987";
-const String stationID = "CMB_MONTERRA1"; // ID of the monitoring station, this value will be sent to phant
+const String WIFI_SSID = "MSU-Secure";
+
+const String stationID = "MonTerra1"; // ID of the monitoring station, this value will be sent to phant
 
 enum encryption{NO_SECURITY, WPA_TKIP, WPA2_AES, WEP};
-const encryption WIFI_EE = WPA2_AES;
+//const encryption WIFI_EE = WPA_TKIP;
+//const encryption WIFI_EE = WPA2_AES;
+//const encryption WIFI_EE = NO_SECURITY;
 
 
 //const String destIP = "192.168.1.122";
@@ -28,6 +29,9 @@ const String destPort = "1F90"; // hex for port 8080
 Phant phant("69.145.204.62", "mqBpa2Gdg6urqo4XzA6rCGvMeMEJ", "jLNzWvK07VhDlaeb9x5DCD0jQjmL");
 //Phant phant("69.145.204.62", "vWoxJEqQvASpYL9vlB2JiyPb6yd", "r3ZqdGpP6WFwqjg8m37ES04qQ0d");
 
+#define COMMAND_TIMEOUT 15000
+#define XB_SERIAL Serial1
+
 const String moistureField = "moisture";
 const String stationIDField = "stationid";
 const String attemptField = "attempt";
@@ -38,6 +42,7 @@ const byte XB_ON_PIN = 13; // XBee's ON pin
 const int XBEE_BAUD = 9600; // Your XBee's baud (9600 is default)
 
 CapacitiveSensor cs = CapacitiveSensor(9,10); 
+//CapacitiveSensor cs = CapacitiveSensor(10,9); 
 long moistureReading;
 unsigned long seq = 0;
 
@@ -71,6 +76,36 @@ void setup() {
     command("ATRE");
   }
   delay(3000);
+
+#ifdef SETUP_MODE
+    setupWalkthrough();
+#endif
+}
+
+void setupWalkthrough() {
+  command("ATAS");
+
+  //int count
+  
+  bool done = false;
+  while(!done) {
+    waitForAvailable(1); 
+    char c = XB_SERIAL.read();
+    if(c == '\r') {
+        waitForAvailable(1);
+        c = XB_SERIAL.read();
+        if(c == '\r') {
+            done = true;
+        } else {
+            Serial.println();
+        }
+    }
+    Serial.print(c);
+  }
+  Serial.println();
+  Serial.println("done with ATAS");
+  delay(1000);
+  //while(1) {}
 }
 
 void setupSleepMode() {
@@ -292,23 +327,22 @@ void connectToWiFi() {
   if(!waitForOK()) {
   }
 
-  command("ATCE2");  // ???
-  if(!waitForOK()) {
-  }
-
   const String CMD_ATID = "ATID";
   command(CMD_ATID + WIFI_SSID); // set network SSID
   if(!waitForOK()) {
   }
 
-  byte ee = WIFI_EE;
-  command("ATEE2"); // set network encryption
+  char ee[2];
+  snprintf(ee, 2, "%d", (byte)WIFI_EE);
+  String ees(ee);
+  command("ATEE" + ees); // set network encryption
   if(!waitForOK()) {
   }
-
-  const String CMD_ATPK = "ATPK";
-  command(CMD_ATPK + WIFI_PSK); // set network password, no commas allowed in password as it's a limitation of the XBee command mode (commas can separate multiple commands)
-  if(!waitForOK()) {
+  if(WIFI_EE != NO_SECURITY) {
+      const String CMD_ATPK = "ATPK";
+      command(CMD_ATPK + WIFI_PSK); // set network password, no commas allowed in password as it's a limitation of the XBee command mode (commas can separate multiple commands)
+      if(!waitForOK()) {
+      }
   }
 
   command("ATMA0"); // set addressing mode to DHCP

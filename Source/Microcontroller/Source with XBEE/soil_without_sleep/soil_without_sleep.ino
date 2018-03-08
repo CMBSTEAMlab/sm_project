@@ -1,4 +1,4 @@
-#include <XBee.h>
+
 #include <Phant.h>
 #include <SoftwareSerial.h>
 #include <CapacitiveSensor.h>
@@ -11,7 +11,6 @@
  * Receive pin is the sensor pin - try different amounts of foil/metal on this pin
  */
 
-XBee radio;
 CapacitiveSensor   cs_4_5 = CapacitiveSensor(4,5);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
 
 
@@ -196,25 +195,6 @@ int sendData()
     return -1;
 }
 
-int atCommand( char *command, uint8_t param ) {
-  // send local AT command
-  AtCommandRequest req = AtCommandRequest((uint8_t *) command, (uint8_t *) &param, sizeof(uint8_t));
-  radio.send(req);
-
-  // receive response frame
-  AtCommandResponse res = AtCommandResponse();
-  if(radio.readPacket(500)) {                               // read packet from radio
-     if(radio.getResponse().getApiId() == AT_RESPONSE) {    // right type?
-       radio.getResponse().getAtCommandResponse(res);
-       if(res.isOk()) {                                     // not an error?
-         return 0;
-       }
-     }
-  }
-
-  // if we get here, return a failure
-  return 1;
-}
 
 // readSensors() will simply update a handful of global variables
 // It updates industVal, homeVal, coVal, and capacVal

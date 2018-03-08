@@ -1,16 +1,6 @@
-#include <CapacitiveSensor.h>
+#include "CapacitiveSensor.h"
 
-/*
- * CapitiveSense Library Demo Sketch
- * Paul Badger 2008
- * Uses a high value resistor e.g. 10M between send pin and receive pin
- * Resistor effects sensitivity, experiment with values, 50K - 50M. Larger resistor values yield larger sensor values.
- * Receive pin is the sensor pin - try different amounts of foil/metal on this pin
- */
-
-
-// CapacitiveSensor   cs = CapacitiveSensor(10,9); // 10,9 for soldered prototypes, 9,10 for MonTerra Boards
-CapacitiveSensor   cs = CapacitiveSensor(9,10);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
+CapacitiveSensor   cs = CapacitiveSensor(9,10);        
 
 void setup()                    
 {
@@ -22,9 +12,9 @@ void setup()
 void loop()                    
 {
     long start = millis();
-    long total =  cs.capacitiveSensorRaw(30);
+    long moistureReading =  cs.capacitiveSensorRaw(30);
 
-    Serial.println(total);                  // print sensor output 1
+    Serial.println(moistureReading); // print sensor output
 
-    delay(100);                             // arbitrary delay to limit data to serial port 
+    delay(1000); // 1 second delay between readings
 }

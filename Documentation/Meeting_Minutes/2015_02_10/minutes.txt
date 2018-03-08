@@ -1,0 +1,16 @@
+Henry and Nick
+-looked at various power saving options for the Xbee
+-worked with the soldering iron to edit the X-bee
+
+Owen
+-worked with Eagle to create a control circuit board
+
+Ren
+-Used Eagle to create capacitive sensor pcb design (Prototype)
+
+Lucas and Harry
+-accesed analyzing and graphing data
+-created a second stream of data for actual testing of prototypes
+
+Gabriel
+-created the Meeting Minutes notes
